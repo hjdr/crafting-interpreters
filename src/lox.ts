@@ -1,22 +1,11 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
+import Scanner from './scanner'
 
-class Lox {
+export default class Lox {
   public static hadError: boolean = false;
 
-  public static main(args: string) {
-    if (args.length > 1) {
-      console.log("Usage: jlox [script]");
-      process.exit(64);
-    } else if (args.length == 1) {
-      this.runFile(args[0])
-    } else {
-      this.runPrompt()
-    }
-  }
-
   public static runFile(path: string) {
-
     // Indicate an error in the exit code.
     if(this.hadError) process.exit(65);
 
@@ -56,6 +45,16 @@ class Lox {
     console.error(`[line ${line}] Error ${where}: ${message}`)
     this.hadError = true;
   }
-
 }
 
+(function main() {
+  const args = process.argv.slice(2);
+    if (args.length > 1) {
+      console.log("Usage: jlox [script]");
+      process.exit(64);
+    } else if (args.length == 1) {
+      Lox.runFile(args[0])
+    } else {
+      Lox.runPrompt()
+    }
+})();

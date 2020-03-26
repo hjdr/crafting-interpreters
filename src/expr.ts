@@ -1,4 +1,4 @@
-import { Token, LoxLiteral } from './token';
+import { Token } from './token';
 
 abstract class Visitor {
   public abstract visitBinaryExpr(expr: InstanceType<typeof Expr.Binary>): string;

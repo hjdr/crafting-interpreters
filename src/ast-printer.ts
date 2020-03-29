@@ -2,8 +2,8 @@ import Expr, { Visitor } from './expr';
 import { Token } from './token';
 import { TokenType } from './token-type';
 
-class AstPrinter extends Visitor {
-  constructor(expr: Expr) {
+export default class AstPrinter extends Visitor {
+  constructor() {
     super();
   }
 
@@ -53,5 +53,5 @@ class AstPrinter extends Visitor {
     new Token(TokenType.STAR, "*", null, 1),
     new Expr.Grouping(new Expr.Literal(45.67)),
   );
-  console.log(new AstPrinter(expression).print(expression))
+  console.log(new AstPrinter().print(expression))
 })();

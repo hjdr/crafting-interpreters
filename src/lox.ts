@@ -1,6 +1,11 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import Scanner from './scanner'
+import Scanner from './scanner';
+import { Token } from './token';
+import { TokenType } from './token-type';
+import Parser from './parser';
+import AstPrinter from './ast-printer';
+import Expr from './expr';
 
 export default class Lox {
   public static hadError: boolean = false;
@@ -32,18 +37,35 @@ export default class Lox {
 
   private static run(source: string) {
     let scanner = new Scanner(source);
-    let tokens = scanner.scanTokens();
+    let tokens: Array<Token> = scanner.scanTokens();
+    let parser = new Parser(tokens);
+    let expression: Expr = parser.parse();
 
-    tokens.forEach((token) => console.log(token))
+    if (this.hadError) return;
+    console.log(new AstPrinter().print(expression))
   }
 
-  public static error(line: number, message: string) {
-    this.report(line, "", message)
+  public static scannerError(line: number, message: string) {
+
   }
 
   private static report(line: number, where: string, message: string) {
     console.error(`[line ${line}] Error ${where}: ${message}`)
     this.hadError = true;
+  }
+
+  public static error(obj: Token | number, message: string) {
+    if (typeof obj === 'number') {
+      const line: number = obj;
+      this.report(line, "", message)
+    } else {
+      const token: Token = obj;
+      if (token.type == TokenType.EOF) {
+        this.report(token.line, 'at end', message);
+      } else {
+        this.report(token.line, `at '${token.lexeme}'`, message)
+      }
+    }
   }
 }
 

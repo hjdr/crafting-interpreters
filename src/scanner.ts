@@ -83,7 +83,7 @@ export default class Scanner {
         } else if (this.isAlpha(c)){
           this.identifier();
         } else {
-          Lox.error(this.line, 'Unexpected Character');
+          Lox.scannerError(this.line, 'Unexpected Character');
           break;
         }
     }
@@ -161,7 +161,7 @@ export default class Scanner {
     }
 
     if(this.isAtEnd()) {
-      Lox.error(this.line, 'Unterminated string.');
+      Lox.scannerError(this.line, 'Unterminated string.');
       return;
     }
 

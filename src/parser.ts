@@ -1,8 +1,9 @@
 import { TokenType } from './token-type';
 import { Token } from './token';
 import Expr from './expr';
+import Lox from './lox';
 
-class Parser {
+export default class Parser {
   private readonly tokens: Array<Token>;
   private current = 0;
 
@@ -10,9 +11,17 @@ class Parser {
     this.tokens = tokens;
   }
 
+  public parse(): Expr {
+    try {
+      return this.expression();
+    } catch (error) {
+      return null
+    }
+  }
+
   private expression(): Expr {
     return this.equality();
-}
+  }
 
   private equality(): Expr {
     let expr: Expr = this.comparison();
@@ -97,6 +106,8 @@ class Parser {
       this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
       return new Expr.Grouping(expr)
     }
+
+    throw this.error(this.peek(), 'Expected an expression.')
   }
 
   private match(...types: Array<TokenType>): boolean {
@@ -107,6 +118,11 @@ class Parser {
       }
     }
     return false
+  }
+
+  private consume(type: TokenType, message: string): Token {
+    if (this.check(type)) return this.advance();
+    throw this.error(this.peek(), message)
   }
 
   private check(type: TokenType): boolean {
@@ -120,7 +136,7 @@ class Parser {
   }
 
   private isAtEnd() {
-    return this.peek().type == EOF;
+    return this.peek().type == TokenType.EOF;
   }
 
   private peek(): Token {
@@ -129,5 +145,30 @@ class Parser {
 
   private previous(): Token {
     return this.tokens[this.current - 1];
+  }
+
+  private error(token: Token, message: string): Error {
+    Lox.error(token, message);
+    return new Error();
+  }
+
+  private synchronise() {
+    this.advance();
+    while (!this.isAtEnd()) {
+      if (this.previous().type == TokenType.SEMICOLON) return;
+
+      switch (this.peek().type) {
+        case TokenType.CLASS:
+        case TokenType.FUN:
+        case TokenType.VAR:
+        case TokenType.FOR:
+        case TokenType.IF:
+        case TokenType.WHILE:
+        case TokenType.PRINT:
+        case TokenType.RETURN:
+          return;
+      }
+      this.advance();
+    }
   }
 }

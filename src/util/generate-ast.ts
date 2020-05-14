@@ -1,71 +1,65 @@
-import { writeFileSync } from 'fs';
+const { writeFileSync } = require("fs");
 
-  function defineAst(outputDir: string, baseName: string, types: Array<string>, imports) {
-    const path: string = `${outputDir}/${baseName.toLocaleLowerCase()}.ts`;
-    let content = imports.endsWith(';') ? `${imports}\n\n` : `${imports};\n\n`;
+function defineType(content, baseName, className, fieldList) {
+  const fields = fieldList.split(',');
 
-    content = defineVisitor(content, baseName, types);
+  content += `export class ${className} {\n`;
 
-    content +=  'export interface ExprConstructor {\n';
-    content +=  '  new(...args: Array<any>): Expr\n';
-    content+=   '}\n\n';
-
-    content += `abstract class ${baseName} {\n`;
-
-
-    for (const type of types) {
-      const className = type.split(' : ')[0].trim();
-      const fields = type.split(' : ')[1].trim();
-      content = defineType(content, baseName, className, fields)
-    }
-
-    content += '// @ts-ignore\n';
-
-    content += '  public accept(visitor: Visitor): string {\n';
-    for (const type of types) {
-      const typeName = type.split(':')[0].trim();
-      content += `   if (this instanceof ${baseName}.${typeName}) return visitor.visit${typeName}${baseName}(this);\n`;
-    }
-    content += '  }\n';
-    content += '}\n\n';
-
-    content += 'export { Visitor }\n';
-    content += `export default ${baseName};\n`;
-
-    writeFileSync(path, content);
+  for (const field of fields) {
+    const name = field.split(":")[0].trim();
+    const type = field.split(":")[1].trim();
+    content += `    public ${name}: ${type};\n`;
   }
 
-  function defineType(content, baseName: string, className: string, fieldList: string) {
-    const fields = fieldList.split(',');
-    content += `  static ${className} = class extends ${baseName} {\n`;
-    let constructorArgs = '';
-    for (const field of fields) {
-      const name = field.trim().split(' ')[1];
-      const type = field.trim().split(' ')[0];
-      constructorArgs += `public ${name}: ${type}, `;
-    }
-    constructorArgs = constructorArgs.trim().slice(0, -1);
+  content += '\n';
+  content += `    public constructor(${fieldList}) {\n`;
 
-    content += `    constructor(${constructorArgs}) {\n`;
-    content += '      super();\n';
-    content += '    }\n';
-    content += '  };\n';
+  for (const field of fields) {
+    const name = field.split(":")[0].trim();
 
-    return content;
+    content += `        this.${name} = ${name};\n`;
   }
 
-  function defineVisitor(content, baseName, types) {
-    content += 'abstract class Visitor {\n';
+  content += '    }\n\n';
 
-    for (const type of types) {
-      const typeName = type.split(':')[0].trim();
-      content += `  public abstract visit${typeName}${baseName}(${baseName.toLowerCase()}: InstanceType<typeof ${baseName}.${typeName}>): string;\n`;
-    }
+  content += '    public accept<T>(visitor: Visitor<T>): T {\n';
+  content += `        return visitor.visit${className}${baseName}(this);\n`;
+  content += '    }\n}\n\n';
 
-    content += '}\n\n';
+  return content;
+}
 
-    return content;
+function defineVisitor(content, baseName, types) {
+  content += 'export interface Visitor<T> {\n';
+
+  for (const type of types) {
+    const typeName = type.split(":")[0].trim();
+
+    content += `    visit${typeName}${baseName}: (${baseName.toLowerCase()}: ${typeName}) => T;\n`;
   }
+
+  content += '}\n\n';
+  return content;
+}
+
+function defineAst(outDir, baseName, types, imports) {
+  const path = outDir + '/' + baseName.toLowerCase() + '.ts';
+  let content = imports.endsWith(';') ? imports + '\n\n' : imports + ';\n\n';
+
+  content = defineVisitor(content, baseName, types);
+
+  const classNames = types.map(v => v.split(" : ")[0].trim());
+  content += `export type ${baseName} = ${classNames.join(" | ")};\n\n`;
+
+  for (const type of types) {
+    const className = type.split(" : ")[0].trim();
+    const fields = type.split(" : ")[1].trim();
+
+    content = defineType(content, baseName, className, fields);
+  }
+
+  writeFileSync(path, content);
+}
 
   (function main () {
     const args = process.argv.slice(2);
@@ -80,12 +74,20 @@ import { writeFileSync } from 'fs';
       outputDir,
       "Expr",
       [
-        'Binary   : Expr left, Token operator, Expr right',
-        'Grouping : Expr expression',
-        'Literal  : Object value',
-        'Unary    : Token operator, Expr right',
+        'Binary   : left: Expr, operator: Token, right: Expr',
+        'Grouping : expression: Expr',
+        'Literal  : value: LoxLiteral',
+        'Unary    : operator: Token, right: Expr',
       ],
-      "import { Token, LoxLiteral } from '../../token';");
+      "import { LoxLiteral, Token } from './token';");
+    defineAst(
+      outputDir,
+      "Stmt",
+      [
+        'Expression : expression: Expr',
+        'Print      : expression: Expr',
+      ],
+      "import { Expr } from './expr';\nimport { LoxLiteral, Token } from './token';");
   })();
 
 

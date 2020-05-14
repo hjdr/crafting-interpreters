@@ -1,45 +1,65 @@
-import { Token } from './token';
+import { LoxLiteral, Token } from './token';
 
-abstract class Visitor {
-  public abstract visitBinaryExpr(expr: InstanceType<typeof Expr.Binary>): string;
-  public abstract visitGroupingExpr(expr: InstanceType<typeof Expr.Grouping>): string;
-  public abstract visitLiteralExpr(expr: InstanceType<typeof Expr.Literal>): string;
-  public abstract visitUnaryExpr(expr: InstanceType<typeof Expr.Unary>): string;
+export interface Visitor<T> {
+    visitBinaryExpr: (expr: Binary) => T;
+    visitGroupingExpr: (expr: Grouping) => T;
+    visitLiteralExpr: (expr: Literal) => T;
+    visitUnaryExpr: (expr: Unary) => T;
 }
 
-export interface ExprConstructor {
-  new(...args: Array<any>): Expr
+export type Expr = Binary | Grouping | Literal | Unary;
+
+export class Binary {
+    public left: Expr;
+    public operator: Token;
+    public right: Expr;
+
+    public constructor(left: Expr, operator: Token, right: Expr) {
+        this.left = left;
+        this.operator = operator;
+        this.right = right;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitBinaryExpr(this);
+    }
 }
 
-abstract class Expr {
-  static Binary = class extends Expr {
-    constructor(public left: Expr, public operator: Token, public right: Expr) {
-      super();
+export class Grouping {
+    public expression: Expr;
+
+    public constructor(expression: Expr) {
+        this.expression = expression;
     }
-  };
-  static Grouping = class extends Expr {
-    constructor(public expression: Expr) {
-      super();
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitGroupingExpr(this);
     }
-  };
-  static Literal = class extends Expr {
-    constructor(public value: Object) {
-      super();
-    }
-  };
-  static Unary = class extends Expr {
-    constructor(public operator: Token, public right: Expr) {
-      super();
-    }
-  };
-// @ts-ignore
-  public accept(visitor: Visitor): string {
-   if (this instanceof Expr.Binary) return visitor.visitBinaryExpr(this);
-   if (this instanceof Expr.Grouping) return visitor.visitGroupingExpr(this);
-   if (this instanceof Expr.Literal) return visitor.visitLiteralExpr(this);
-   if (this instanceof Expr.Unary) return visitor.visitUnaryExpr(this);
-  }
 }
 
-export { Visitor }
-export default Expr;
+export class Literal {
+    public value: LoxLiteral;
+
+    public constructor(value: LoxLiteral) {
+        this.value = value;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitLiteralExpr(this);
+    }
+}
+
+export class Unary {
+    public operator: Token;
+    public right: Expr;
+
+    public constructor(operator: Token, right: Expr) {
+        this.operator = operator;
+        this.right = right;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitUnaryExpr(this);
+    }
+}
+

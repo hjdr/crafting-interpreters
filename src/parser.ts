@@ -1,6 +1,6 @@
 import { TokenType } from './token-type';
 import { Token } from './token';
-import Expr from './expr';
+import { Binary, Expr, Grouping, Literal, Unary } from './expr';
 import Lox from './lox';
 
 export default class Parser {
@@ -31,7 +31,7 @@ export default class Parser {
       TokenType.EQUAL_EQUAL)) {
       let operator: Token = this.previous();
       let rightExpr: Expr = this.comparison();
-      expr = new Expr.Binary(expr, operator, rightExpr);
+      expr = new Binary(expr, operator, rightExpr);
     }
     return expr;
   }
@@ -46,7 +46,7 @@ export default class Parser {
       TokenType.LESS_EQUAL)) {
       let operator: Token = this.previous();
       let rightExpr = this.addition();
-      expr = new Expr.Binary(expr, operator, rightExpr);
+      expr = new Binary(expr, operator, rightExpr);
     }
     return expr;
   }
@@ -60,7 +60,7 @@ export default class Parser {
     )) {
       let operator: Token = this.previous();
       let rightExpr = this.multiplication();
-      expr = new Expr.Binary(expr, operator, rightExpr);
+      expr = new Binary(expr, operator, rightExpr);
     }
     return expr;
   }
@@ -74,7 +74,7 @@ export default class Parser {
     )) {
       let operator: Token = this.previous();
       let rightExpr = this.unary();
-      expr = new Expr.Binary(expr, operator, rightExpr);
+      expr = new Binary(expr, operator, rightExpr);
     }
     return expr;
   }
@@ -86,28 +86,28 @@ export default class Parser {
     )) {
       let operator: Token = this.previous();
       let rightExpr: Expr = this.unary();
-      return new Expr.Unary(operator, rightExpr)
+      return new Unary(operator, rightExpr)
     }
     return this.primary();
   }
 
   private primary(): Expr {
-    if (this.match(TokenType.FALSE)) return new Expr.Literal(false);
-    if (this.match(TokenType.TRUE)) return new Expr.Literal(true);
-    if (this.match(TokenType.NIL)) return new Expr.Literal(null);
+    if (this.match(TokenType.FALSE)) return new Literal(false);
+    if (this.match(TokenType.TRUE)) return new Literal(true);
+    if (this.match(TokenType.NIL)) return new Literal(null);
     if (this.match(
       TokenType.NUMBER,
       TokenType.STRING
     )) {
-      return new Expr.Literal(this.previous().literal);
+      return new Literal(this.previous().literal);
     }
     if (this.match(TokenType.LEFT_PAREN)) {
       let expr = this.expression();
       this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
-      return new Expr.Grouping(expr)
+      return new Grouping(expr)
     }
 
-    throw this.error(this.peek(), 'Expected an expression.')
+    throw this.error(this.peek(), 'Expected a valid expression.')
   }
 
   private match(...types: Array<TokenType>): boolean {

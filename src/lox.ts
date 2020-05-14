@@ -4,15 +4,18 @@ import Scanner from './scanner';
 import { Token } from './token';
 import { TokenType } from './token-type';
 import Parser from './parser';
-import AstPrinter from './ast-printer';
-import Expr from './expr';
+import { Expr } from './expr';
+import { RuntimeError } from './runtime-error';
+import Interpreter from './interpreter';
 
 export default class Lox {
+  private static interpreter = new Interpreter();
   public static hadError: boolean = false;
+  public static hadRuntimeError: boolean = false;
 
   public static runFile(path: string) {
     // Indicate an error in the exit code.
-    if(this.hadError) process.exit(65);
+    if(this.hadError || this.hadRuntimeError) process.exit(65);
 
     let source = fs.readFileSync(path, { encoding: 'utf8' });
     this.run(source);
@@ -42,7 +45,7 @@ export default class Lox {
     let expression: Expr = parser.parse();
 
     if (this.hadError) return;
-    console.log(new AstPrinter().print(expression))
+    this.interpreter.interpret(expression)
   }
 
   public static scannerError(line: number, message: string) {
@@ -57,15 +60,20 @@ export default class Lox {
   public static error(obj: Token | number, message: string) {
     if (typeof obj === 'number') {
       const line: number = obj;
-      this.report(line, "", message)
+      this.report(line, "", message);
     } else {
       const token: Token = obj;
       if (token.type == TokenType.EOF) {
         this.report(token.line, 'at end', message);
       } else {
-        this.report(token.line, `at '${token.lexeme}'`, message)
+        this.report(token.line, `at '${token.lexeme}'`, message);
       }
     }
+  }
+
+  public static runtimeError(error: RuntimeError) {
+    console.error(`${error.message} \n[line: ${error.token.line}]`);
+    this.hadRuntimeError = true;
   }
 }
 
@@ -77,6 +85,6 @@ export default class Lox {
     } else if (args.length == 1) {
       Lox.runFile(args[0])
     } else {
-      Lox.runPrompt()
+      Lox.runPrompt();
     }
 })();

@@ -4,14 +4,28 @@ import Scanner from './scanner';
 import { Token } from './token';
 import { TokenType } from './token-type';
 import Parser from './parser';
-import { Expr } from './expr';
 import { RuntimeError } from './runtime-error';
 import Interpreter from './interpreter';
+import { Stmt } from './stmt';
 
 export default class Lox {
   private static interpreter = new Interpreter();
   public static hadError: boolean = false;
   public static hadRuntimeError: boolean = false;
+
+  public static error(obj: Token | number, message: string) {
+    if (typeof obj === 'number') {
+      const line: number = obj;
+      this.report(line, "", message);
+    } else {
+      const token: Token = obj;
+      if (token.type == TokenType.EOF) {
+        this.report(token.line, 'at end', message);
+      } else {
+        this.report(token.line, `at '${token.lexeme}'`, message);
+      }
+    }
+  }
 
   public static runFile(path: string) {
     // Indicate an error in the exit code.
@@ -38,18 +52,9 @@ export default class Lox {
     })
   }
 
-  private static run(source: string) {
-    let scanner = new Scanner(source);
-    let tokens: Array<Token> = scanner.scanTokens();
-    let parser = new Parser(tokens);
-    let expression: Expr = parser.parse();
-
-    if (this.hadError) return;
-    this.interpreter.interpret(expression)
-  }
-
-  public static scannerError(line: number, message: string) {
-
+  public static runtimeError(error: RuntimeError) {
+    console.error(`${error.message} \n[line: ${error.token.line}]`);
+    this.hadRuntimeError = true;
   }
 
   private static report(line: number, where: string, message: string) {
@@ -57,23 +62,13 @@ export default class Lox {
     this.hadError = true;
   }
 
-  public static error(obj: Token | number, message: string) {
-    if (typeof obj === 'number') {
-      const line: number = obj;
-      this.report(line, "", message);
-    } else {
-      const token: Token = obj;
-      if (token.type == TokenType.EOF) {
-        this.report(token.line, 'at end', message);
-      } else {
-        this.report(token.line, `at '${token.lexeme}'`, message);
-      }
-    }
-  }
-
-  public static runtimeError(error: RuntimeError) {
-    console.error(`${error.message} \n[line: ${error.token.line}]`);
-    this.hadRuntimeError = true;
+  private static run(source: string) {
+    let scanner = new Scanner(source);
+    let tokens: Array<Token> = scanner.scanTokens();
+    let parser = new Parser(tokens);
+    let statements: Array<Stmt> = parser.parse();
+    if (this.hadError) return;
+    this.interpreter.interpret(statements)
   }
 }
 

@@ -1,13 +1,29 @@
 import { LoxLiteral, Token } from './token';
 
 export interface Visitor<T> {
+    visitAssignExpr: (expr: Assign) => T;
     visitBinaryExpr: (expr: Binary) => T;
     visitGroupingExpr: (expr: Grouping) => T;
     visitLiteralExpr: (expr: Literal) => T;
     visitUnaryExpr: (expr: Unary) => T;
+    visitVariableExpr: (expr: Variable) => T;
 }
 
-export type Expr = Binary | Grouping | Literal | Unary;
+export type Expr = Assign | Binary | Grouping | Literal | Unary | Variable;
+
+export class Assign {
+    public name: Token;
+    public value: Expr;
+
+    public constructor(name: Token, value: Expr) {
+        this.name = name;
+        this.value = value;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitAssignExpr(this);
+    }
+}
 
 export class Binary {
     public left: Expr;
@@ -60,6 +76,18 @@ export class Unary {
 
     public accept<T>(visitor: Visitor<T>): T {
         return visitor.visitUnaryExpr(this);
+    }
+}
+
+export class Variable {
+    public name: Token;
+
+    public constructor(name: Token) {
+        this.name = name;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitVariableExpr(this);
     }
 }
 

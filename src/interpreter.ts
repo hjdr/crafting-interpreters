@@ -1,4 +1,13 @@
-import { Expr, Binary, Grouping, Literal, Visitor, Unary } from './expr';
+import {
+  Expr,
+  Binary,
+  Grouping,
+  Literal,
+  Visitor as ExprVisitor,
+  Unary,
+  Variable,
+  Assign,
+} from './expr';
 import { TokenType } from './token-type';
 import {
   LoxLiteral,
@@ -6,55 +15,30 @@ import {
 } from './token';
 import { RuntimeError } from './runtime-error';
 import Lox from './lox';
+import {
+  Expression,
+  Print,
+  Stmt,
+  Var,
+  Visitor as StmtVisitor,
+} from './stmt';
+import { Environment } from './environment';
 
-export default class Interpreter implements Visitor<LoxLiteral> {
+export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor<void> {
+  private environment = new Environment();
 
-  public interpret(expression: Expr) {
+  public interpret(statements: Array<Stmt>) {
     try {
-      const value: LoxLiteral = this.evaluate(expression);
-      console.log(String(value));
+      statements.forEach(statement => this.execute(statement))
     } catch (error) {
       Lox.runtimeError(error)
     }
   }
 
-  private checkNumberOperand(operator: Token, ...operands: Array<LoxLiteral>) {
-    for (const operand of operands) {
-      if(typeof operand !== 'number') {
-        throw new RuntimeError(operator, 'Operand(s) must be a number.')
-      }
-    }
-  }
-
-  private evaluate(expr: Expr): LoxLiteral {
-    return expr.accept<LoxLiteral>(this);
-  }
-
-  private isTruthy(literal: LoxLiteral): boolean {
-    if (literal == null) return false;
-    if (typeof literal == 'boolean') return literal;
-    return true;
-  }
-
-  public visitLiteralExpr(expr: InstanceType<typeof Literal>): LoxLiteral {
-    return expr.value;
-  }
-
-  public visitGroupingExpr(expr: InstanceType<typeof Grouping>): LoxLiteral {
-    return this.evaluate(expr.expression);
-  }
-
-  public visitUnaryExpr(expr: InstanceType<typeof Unary>): LoxLiteral {
-    let right = this.evaluate(expr.right);
-
-    switch (expr.operator.type) {
-      case TokenType.BANG:
-        return !this.isTruthy(right);
-      case TokenType.MINUS:
-        this.checkNumberOperand(expr.operator, right);
-        return -(right as number)
-    }
-    return null
+  public visitAssignExpr(expr: Assign): LoxLiteral {
+    const value: LoxLiteral = this.evaluate(expr.value)
+    this.environment.assign(expr.name, value);
+    return value;
   }
 
   public visitBinaryExpr(expr: InstanceType<typeof Binary>): LoxLiteral {
@@ -99,4 +83,65 @@ export default class Interpreter implements Visitor<LoxLiteral> {
     return null
   }
 
+  public visitExpressionStmt(stmt: Expression): void {
+    this.evaluate(stmt.expression);
+  }
+
+  public visitGroupingExpr(expr: InstanceType<typeof Grouping>): LoxLiteral {
+    return this.evaluate(expr.expression);
+  }
+
+  public visitLiteralExpr(expr: InstanceType<typeof Literal>): LoxLiteral {
+    return expr.value;
+  }
+
+  public visitPrintStmt(stmt: Print) {
+    const value = this.evaluate(stmt.expression);
+    console.log(value.toString());
+  }
+
+  public visitUnaryExpr(expr: InstanceType<typeof Unary>): LoxLiteral {
+    let right = this.evaluate(expr.right);
+
+    switch (expr.operator.type) {
+      case TokenType.BANG:
+        return !this.isTruthy(right);
+      case TokenType.MINUS:
+        this.checkNumberOperand(expr.operator, right);
+        return -(right as number)
+    }
+    return null
+  }
+
+  public visitVariableExpr(expr: Variable) {
+    return this.environment.get(expr.name)
+  }
+
+  public visitVarStmt(stmt: Var) {
+    let value: LoxLiteral = null;
+    if (stmt.initializer !== null ) value = this.evaluate(stmt.initializer)
+    this.environment.define(stmt.name.lexeme, value)
+  }
+
+  private checkNumberOperand(operator: Token, ...operands: Array<LoxLiteral>) {
+    for (const operand of operands) {
+      if(typeof operand !== 'number') {
+        throw new RuntimeError(operator, 'Operand(s) must be a number.')
+      }
+    }
+  }
+
+  private evaluate(expr: Expr): LoxLiteral {
+    return expr.accept<LoxLiteral>(this);
+  }
+
+  private isTruthy(literal: LoxLiteral): boolean {
+    if (literal == null) return false;
+    if (typeof literal == 'boolean') return literal;
+    return true;
+  }
+
+  private execute(stmt: Stmt) {
+    stmt.accept(this);
+  }
 }

@@ -74,10 +74,12 @@ function defineAst(outDir, baseName, types, imports) {
       outputDir,
       "Expr",
       [
+        'Assign   : name: Token, value: Expr',
         'Binary   : left: Expr, operator: Token, right: Expr',
         'Grouping : expression: Expr',
         'Literal  : value: LoxLiteral',
         'Unary    : operator: Token, right: Expr',
+        'Variable : name: Token',
       ],
       "import { LoxLiteral, Token } from './token';");
     defineAst(
@@ -86,6 +88,7 @@ function defineAst(outDir, baseName, types, imports) {
       [
         'Expression : expression: Expr',
         'Print      : expression: Expr',
+        'Var        : name: Token, initializer: Expr | null',
       ],
       "import { Expr } from './expr';\nimport { LoxLiteral, Token } from './token';");
   })();

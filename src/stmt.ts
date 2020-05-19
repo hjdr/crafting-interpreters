@@ -4,9 +4,10 @@ import { LoxLiteral, Token } from './token';
 export interface Visitor<T> {
     visitExpressionStmt: (stmt: Expression) => T;
     visitPrintStmt: (stmt: Print) => T;
+    visitVarStmt: (stmt: Var) => T;
 }
 
-export type Stmt = Expression | Print;
+export type Stmt = Expression | Print | Var;
 
 export class Expression {
     public expression: Expr;
@@ -29,6 +30,20 @@ export class Print {
 
     public accept<T>(visitor: Visitor<T>): T {
         return visitor.visitPrintStmt(this);
+    }
+}
+
+export class Var {
+    public name: Token;
+    public initializer: Expr | null;
+
+    public constructor(name: Token, initializer: Expr | null) {
+        this.name = name;
+        this.initializer = initializer;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitVarStmt(this);
     }
 }
 

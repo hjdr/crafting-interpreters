@@ -17,6 +17,12 @@ export class Environment {
       this.values.set(name.lexeme, value);
       return;
     }
+
+    if (this.enclosing) {
+      this.enclosing.assign(name, value);
+      return;
+    }
+
     throw new RuntimeError(name, `Undefined variable "${name.lexeme}".`)
   }
 

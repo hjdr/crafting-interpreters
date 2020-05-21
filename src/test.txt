@@ -1,4 +1,19 @@
-var a = 6;
-var b = (3 + 4) * 6;
-b = 2;
-print a + b;
+var a = "global a";
+var b = "global b";
+var c = "global c";
+{
+    a = "first";
+    var b = "outer b";
+    {
+        var a = "inner a";
+        b = "hello";
+        print b;
+        print c;
+    }
+    print a;
+    print b;
+    print c;
+}
+print a;
+print b;
+print c;

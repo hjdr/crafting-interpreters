@@ -16,6 +16,7 @@ import {
 import { RuntimeError } from './runtime-error';
 import Lox from './lox';
 import {
+  Block,
   Expression,
   Print,
   Stmt,
@@ -83,6 +84,10 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
     return null
   }
 
+  public visitBlockStmt(stmt: Block) {
+    this.executeBlock(stmt.statements, new Environment(this.environment))
+  }
+
   public visitExpressionStmt(stmt: Expression): void {
     this.evaluate(stmt.expression);
   }
@@ -143,5 +148,18 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
 
   private execute(stmt: Stmt) {
     stmt.accept(this);
+  }
+
+  private executeBlock(statements: Array<Stmt>, environment: Environment) {
+    const previous = this.environment
+
+    try {
+      this.environment = environment
+      for (const statement of statements) {
+        this.execute(statement)
+    }
+    } finally {
+      this.environment = previous;
+    }
   }
 }

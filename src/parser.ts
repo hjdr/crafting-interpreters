@@ -11,6 +11,7 @@ import {
 } from './expr';
 import Lox from './lox';
 import {
+  Block,
   Expression,
   Print,
   Stmt,
@@ -67,6 +68,17 @@ export default class Parser {
       Lox.error(equals, 'Invalid assignment target.');
     }
     return expr;
+  }
+
+  private block(): Array<Stmt> {
+    let statements: Array<Stmt> = [];
+
+    while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+      statements.push(this.declaration());
+    }
+
+    this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
   }
 
   private check(type: TokenType): boolean {
@@ -194,7 +206,7 @@ export default class Parser {
 
   private statement(): Stmt {
     if (this.match(TokenType.PRINT)) return this.printStatement();
-
+    if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
     return this.expressionStatement();
   }
 

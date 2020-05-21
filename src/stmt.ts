@@ -2,12 +2,26 @@ import { Expr } from './expr';
 import { LoxLiteral, Token } from './token';
 
 export interface Visitor<T> {
+    visitBlockStmt: (stmt: Block) => T;
     visitExpressionStmt: (stmt: Expression) => T;
+    visitIfStmt: (stmt: If) => T;
     visitPrintStmt: (stmt: Print) => T;
     visitVarStmt: (stmt: Var) => T;
 }
 
-export type Stmt = Expression | Print | Var;
+export type Stmt = Block | Expression | If | Print | Var;
+
+export class Block {
+    public statements: Array<Stmt>;
+
+    public constructor(statements: Array<Stmt>) {
+        this.statements = statements;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitBlockStmt(this);
+    }
+}
 
 export class Expression {
     public expression: Expr;
@@ -18,6 +32,22 @@ export class Expression {
 
     public accept<T>(visitor: Visitor<T>): T {
         return visitor.visitExpressionStmt(this);
+    }
+}
+
+export class If {
+    public condition: Expr;
+    public thenBranch: Stmt;
+    public elseBranch: Stmt;
+
+    public constructor(condition: Expr, thenBranch: Stmt, elseBranch: Stmt) {
+        this.condition = condition;
+        this.thenBranch = thenBranch;
+        this.elseBranch = elseBranch;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitIfStmt(this);
     }
 }
 

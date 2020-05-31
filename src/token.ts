@@ -1,6 +1,7 @@
 import { TokenType } from './token-type';
+import { LoxCallable } from './lox-callable';
 
-export type LoxLiteral = string | number | boolean | null
+export type LoxLiteral = string | number | boolean | null | LoxCallable;
 
 export class Token {
   public type: TokenType;

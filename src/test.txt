@@ -1,19 +1,11 @@
-var a = "global a";
-var b = "global b";
-var c = "global c";
-{
-    a = "first";
-    var b = "outer b";
-    {
-        var a = "inner a";
-        b = "hello";
-        print b;
-        print c;
+var a = 1;
+var b = 10;
+var displayText = "LoxLanguage";
+
+while (a < 10) {
+    for (var c = a; c < b; c = c + 1) {
+        print displayText;
     }
-    print a;
-    print b;
-    print c;
+    displayText = displayText + " | LoxLanguage";
+    a = a + 1;
 }
-print a;
-print b;
-print c;

@@ -1,12 +1,14 @@
 import {
-  Expr,
+  Assign,
   Binary,
+  Call,
+  Expr,
   Grouping,
   Literal,
-  Visitor as ExprVisitor,
+  Logical,
   Unary,
   Variable,
-  Assign,
+  Visitor as ExprVisitor,
 } from './expr';
 import { TokenType } from './token-type';
 import {
@@ -18,15 +20,34 @@ import Lox from './lox';
 import {
   Block,
   Expression,
+  If,
   Print,
   Stmt,
   Var,
   Visitor as StmtVisitor,
+  While,
 } from './stmt';
 import { Environment } from './environment';
+import { LoxCallable } from './lox-callable';
+
+function isLoxCallable(callee: any): callee is LoxCallable {
+  return callee.call && (typeof callee.call === 'function')
+}
 
 export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor<void> {
-  private environment = new Environment();
+  public globals: Environment;
+  private environment: Environment;
+
+  public constructor() {
+    this.globals = new Environment();
+    this.environment = this.globals;
+
+    this.globals.define('clock', {
+      arity(): number { return 0; },
+      call(): LoxLiteral { return Date.now(); },
+      toString() { return '<native fn>' }
+    });
+  }
 
   public interpret(statements: Array<Stmt>) {
     try {
@@ -85,7 +106,30 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
   }
 
   public visitBlockStmt(stmt: Block) {
-    this.executeBlock(stmt.statements, new Environment(this.environment))
+    this.executeBlock(stmt.statements, new Environment(this.environment));
+  }
+
+  public visitCallExpr(expr: Call) {
+   const callee: LoxLiteral = this.evaluate(expr.callee);
+
+   let args: Array<LoxLiteral> = [];
+   for (const arg of expr.args) {
+     args.push(this.evaluate(arg))
+   }
+
+    const fn = callee as LoxCallable
+
+   if (!isLoxCallable(callee)) {
+     throw new RuntimeError(expr.paren, 'Can only call functions and classes.');
+   }
+
+   if (args.length !== fn.arity()) {
+     throw new RuntimeError(
+       expr.paren,
+       `Expected ${fn.arity()} arguments but got ${args.length}.`
+     );
+   }
+    return fn.call(this, args)
   }
 
   public visitExpressionStmt(stmt: Expression): void {
@@ -96,8 +140,27 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
     return this.evaluate(expr.expression);
   }
 
+  public visitIfStmt(stmt: If) {
+    if (this.isTruthy(this.evaluate(stmt.condition))) {
+      this.execute(stmt.thenBranch);
+    } else if (stmt.elseBranch !== null) {
+      this.execute(stmt.elseBranch);
+    }
+  }
+
   public visitLiteralExpr(expr: InstanceType<typeof Literal>): LoxLiteral {
     return expr.value;
+  }
+
+  public visitLogicalExpr(expr: Logical) {
+    const left: LoxLiteral = this.evaluate(expr.left);
+
+    if (expr.operator.type === TokenType.OR) {
+      if (this.isTruthy(left)) return left;
+    } else {
+      if (!this.isTruthy(left)) return left;
+    }
+    return this.evaluate(expr.right)
   }
 
   public visitPrintStmt(stmt: Print) {
@@ -113,19 +176,26 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
         return !this.isTruthy(right);
       case TokenType.MINUS:
         this.checkNumberOperand(expr.operator, right);
-        return -(right as number)
+        return -(right as number);
     }
-    return null
+    return null;
   }
 
   public visitVariableExpr(expr: Variable) {
-    return this.environment.get(expr.name)
+    return this.environment.get(expr.name);
   }
 
   public visitVarStmt(stmt: Var) {
     let value: LoxLiteral = null;
-    if (stmt.initializer !== null ) value = this.evaluate(stmt.initializer)
-    this.environment.define(stmt.name.lexeme, value)
+    if (stmt.initializer !== null ) value = this.evaluate(stmt.initializer);
+    this.environment.define(stmt.name.lexeme, value);
+  }
+
+  public visitWhileStmt(stmt: While) {
+    while (this.isTruthy(this.evaluate(stmt.condition))) {
+      this.execute(stmt.body);
+    }
+    return null;
   }
 
   private checkNumberOperand(operator: Token, ...operands: Array<LoxLiteral>) {
@@ -151,12 +221,12 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
   }
 
   private executeBlock(statements: Array<Stmt>, environment: Environment) {
-    const previous = this.environment
+    const previous = this.environment;
 
     try {
-      this.environment = environment
+      this.environment = environment;
       for (const statement of statements) {
-        this.execute(statement)
+        this.execute(statement);
     }
     } finally {
       this.environment = previous;

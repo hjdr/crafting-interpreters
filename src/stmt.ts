@@ -5,11 +5,13 @@ export interface Visitor<T> {
     visitBlockStmt: (stmt: Block) => T;
     visitExpressionStmt: (stmt: Expression) => T;
     visitIfStmt: (stmt: If) => T;
+    visitFunctionStmt: (stmt: Function) => T;
     visitPrintStmt: (stmt: Print) => T;
     visitVarStmt: (stmt: Var) => T;
+    visitWhileStmt: (stmt: While) => T;
 }
 
-export type Stmt = Block | Expression | If | Print | Var;
+export type Stmt = Block | Expression | If | Function | Print | Var | While;
 
 export class Block {
     public statements: Array<Stmt>;
@@ -51,6 +53,22 @@ export class If {
     }
 }
 
+export class Function {
+    public name: Token;
+    public params: Array<Token>;
+    public body: Array<Stmt>;
+
+    public constructor(name: Token, params: Array<Token>, body: Array<Stmt>) {
+        this.name = name;
+        this.params = params;
+        this.body = body;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitFunctionStmt(this);
+    }
+}
+
 export class Print {
     public expression: Expr;
 
@@ -74,6 +92,20 @@ export class Var {
 
     public accept<T>(visitor: Visitor<T>): T {
         return visitor.visitVarStmt(this);
+    }
+}
+
+export class While {
+    public condition: Expr;
+    public body: Stmt;
+
+    public constructor(condition: Expr, body: Stmt) {
+        this.condition = condition;
+        this.body = body;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitWhileStmt(this);
     }
 }
 

@@ -15,6 +15,7 @@ import Lox from './lox';
 import {
   Block,
   Expression,
+  Func,
   If,
   Print,
   Stmt,
@@ -131,12 +132,12 @@ export default class Parser {
 
   private consume(type: TokenType, message: string): Token {
     if (this.check(type)) return this.advance();
-    throw this.error(this.peek(), message)
+    throw this.error(this.peek(), message);
   }
 
   private declaration(): Stmt {
     try {
-      if (this.match(TokenType.FUN)) return this.fun('function')
+      if (this.match(TokenType.FUN)) return this.func('function')
       if (this.match(TokenType.VAR)) return this.varDeclaration();
       return this.statement();
     } catch (error) {
@@ -169,7 +170,7 @@ export default class Parser {
   private expressionStatement(): Stmt {
     const expr: Expr = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
-    return new Expression(expr)
+    return new Expression(expr);
   }
 
   private finishCall(callee: Expr): Expr {
@@ -216,12 +217,32 @@ export default class Parser {
     }
 
     if (condition === null) condition = new Literal(true);
-    body = new While(condition, body)
+    body = new While(condition, body);
 
     if (initializer !== null) {
       body = new Block([initializer, body]);
     }
     return body;
+  }
+
+  private func(kind: string): Func {
+    const name: Token = this.consume(TokenType.IDENTIFIER, `Expect ${kind} name.`);
+
+    this.consume(TokenType.LEFT_PAREN, `Expect '(' after ${kind} name`);
+    let parameters: Array<Token> = []
+    if (!this.check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (parameters.length >= 255) {
+          this.error(this.peek(), 'Cannot have more than 255 parameters.');
+        }
+        parameters.push(this.consume(TokenType.IDENTIFIER, 'Expect parameter name'));
+      } while (this.match(TokenType.COMMA));
+    }
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+
+    this.consume(TokenType.LEFT_BRACE, `Expect '{' before ${kind} body.`);
+    const body = this.block();
+    return new Func(name, parameters, body);
   }
 
   private ifStatement() {

@@ -91,7 +91,7 @@ function defineAst(outDir, baseName, types, imports) {
         'Block      : statements: Array<Stmt>',
         'Expression : expression: Expr',
         'If         : condition: Expr, thenBranch: Stmt, elseBranch: Stmt',
-        'Function   : name: Token, params: Array<Token>, body: Array<Stmt>',
+        'Func       : name: Token, params: Array<Token>, body: Array<Stmt>',
         'Print      : expression: Expr',
         'Var        : name: Token, initializer: Expr | null',
         'While      : condition: Expr, body: Stmt',

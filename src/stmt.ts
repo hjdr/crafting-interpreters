@@ -5,13 +5,13 @@ export interface Visitor<T> {
     visitBlockStmt: (stmt: Block) => T;
     visitExpressionStmt: (stmt: Expression) => T;
     visitIfStmt: (stmt: If) => T;
-    visitFunctionStmt: (stmt: Function) => T;
+    visitFuncStmt: (stmt: Func) => T;
     visitPrintStmt: (stmt: Print) => T;
     visitVarStmt: (stmt: Var) => T;
     visitWhileStmt: (stmt: While) => T;
 }
 
-export type Stmt = Block | Expression | If | Function | Print | Var | While;
+export type Stmt = Block | Expression | If | Func | Print | Var | While;
 
 export class Block {
     public statements: Array<Stmt>;
@@ -53,7 +53,7 @@ export class If {
     }
 }
 
-export class Function {
+export class Func {
     public name: Token;
     public params: Array<Token>;
     public body: Array<Stmt>;
@@ -65,7 +65,7 @@ export class Function {
     }
 
     public accept<T>(visitor: Visitor<T>): T {
-        return visitor.visitFunctionStmt(this);
+        return visitor.visitFuncStmt(this);
     }
 }
 

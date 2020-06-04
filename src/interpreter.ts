@@ -49,6 +49,19 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
     });
   }
 
+  public executeBlock(statements: Array<Stmt>, environment: Environment) {
+    const previous = this.environment;
+
+    try {
+      this.environment = environment;
+      for (const statement of statements) {
+        this.execute(statement);
+      }
+    } finally {
+      this.environment = previous;
+    }
+  }
+
   public interpret(statements: Array<Stmt>) {
     try {
       statements.forEach(statement => this.execute(statement))
@@ -218,18 +231,5 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
 
   private execute(stmt: Stmt) {
     stmt.accept(this);
-  }
-
-  private executeBlock(statements: Array<Stmt>, environment: Environment) {
-    const previous = this.environment;
-
-    try {
-      this.environment = environment;
-      for (const statement of statements) {
-        this.execute(statement);
-    }
-    } finally {
-      this.environment = previous;
-    }
   }
 }

@@ -1,10 +1,13 @@
 import { LoxCallable } from './lox-callable';
-import { Func } from './stmt';
+import {
+  Func,
+  Return,
+} from './stmt';
 import { LoxLiteral } from './token';
 import Interpreter from './interpreter';
 import { Environment } from './environment';
 
-class LoxFunction implements LoxCallable {
+export class LoxFunction implements LoxCallable {
   private declaration: Func;
 
   constructor(declaration: Func) {
@@ -17,7 +20,20 @@ class LoxFunction implements LoxCallable {
       environment.define(this.declaration.params[i].lexeme, args[i])
     }
 
-    interpreter.executeBlock(this.declaration.body, environment);
+    try {
+      interpreter.executeBlock(this.declaration.body, environment);
+    } catch (returnValue) {
+      return returnValue.value;
+    }
+
     return null;
+  }
+
+  public arity(): number {
+    return this.declaration.params.length;
+  }
+
+  public toString(): string {
+    return `<fn ${this.declaration.name.lexeme}>`
   }
 }

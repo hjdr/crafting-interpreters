@@ -20,8 +20,10 @@ import Lox from './lox';
 import {
   Block,
   Expression,
+  Func,
   If,
   Print,
+  Return,
   Stmt,
   Var,
   Visitor as StmtVisitor,
@@ -29,6 +31,8 @@ import {
 } from './stmt';
 import { Environment } from './environment';
 import { LoxCallable } from './lox-callable';
+import { LoxFunction } from './lox-function';
+import { ReturnException } from './return-exception';
 
 function isLoxCallable(callee: any): callee is LoxCallable {
   return callee.call && (typeof callee.call === 'function')
@@ -149,6 +153,11 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
     this.evaluate(stmt.expression);
   }
 
+  public visitFuncStmt(stmt: Func) {
+    const func = new LoxFunction(stmt);
+    this.environment.define(stmt.name.lexeme, func);
+  }
+
   public visitGroupingExpr(expr: InstanceType<typeof Grouping>): LoxLiteral {
     return this.evaluate(expr.expression);
   }
@@ -179,6 +188,13 @@ export default class Interpreter implements ExprVisitor<LoxLiteral>, StmtVisitor
   public visitPrintStmt(stmt: Print) {
     const value = this.evaluate(stmt.expression);
     console.log(value.toString());
+  }
+
+  public visitReturnStmt(stmt: Return) {
+    let value: LoxLiteral = null;
+    if (stmt.value !== null) value = this.evaluate(stmt.value);
+
+    throw new ReturnException(value);
   }
 
   public visitUnaryExpr(expr: InstanceType<typeof Unary>): LoxLiteral {

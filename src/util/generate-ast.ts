@@ -93,6 +93,7 @@ function defineAst(outDir, baseName, types, imports) {
         'If         : condition: Expr, thenBranch: Stmt, elseBranch: Stmt',
         'Func       : name: Token, params: Array<Token>, body: Array<Stmt>',
         'Print      : expression: Expr',
+        'Return     : keyword: Token, value: Expr',
         'Var        : name: Token, initializer: Expr | null',
         'While      : condition: Expr, body: Stmt',
       ],

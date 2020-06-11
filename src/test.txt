@@ -1,11 +1,8 @@
-var a = 1;
-var b = 10;
-var displayText = "LoxLanguage";
+fun fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 2) + fibonacci(n - 1);
+}
 
-while (a < 10) {
-    for (var c = a; c < b; c = c + 1) {
-        print displayText;
-    }
-    displayText = displayText + " | LoxLanguage";
-    a = a + 1;
+for (var i = 0; i < 20; i = i + 1) {
+    print fibonacci(i);
 }
